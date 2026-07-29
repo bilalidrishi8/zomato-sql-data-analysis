@@ -1,0 +1,252 @@
+SELECT * FROM zomato_restaurants
+
+SELECT COUNT(*) FROM zomato_restaurants
+
+--1. Find the top 10 restaurants based on rating.
+SELECT * FROM zomato_restaurants
+
+SELECT
+    restaurant_name,
+    city,
+    aggregate_rating,
+    votes
+FROM zomato_restaurants
+WHERE aggregate_rating > 0
+ORDER BY aggregate_rating DESC, votes DESC
+LIMIT 10;
+
+--2. Find the top 10 restaurants based on votes.
+SELECT * FROM zomato_restaurants
+
+SELECT
+    restaurant_name,
+    city,
+    votes,
+    aggregate_rating
+FROM zomato_restaurants
+ORDER BY votes DESC
+LIMIT 10;
+
+--3. Find the most popular cuisine.
+SELECT * FROM zomato_restaurants
+
+SELECT
+    cuisines,
+    COUNT(*) AS restaurant_count
+FROM zomato_restaurants
+WHERE cuisines IS NOT NULL
+GROUP BY cuisines
+ORDER BY restaurant_count DESC
+LIMIT 1;
+
+--4. Find the average rating for each price range.
+SELECT * FROM zomato_restaurants
+
+SELECT
+    price_range,
+    ROUND(AVG(aggregate_rating), 2) AS average_rating
+FROM zomato_restaurants
+WHERE aggregate_rating > 0
+GROUP BY price_range
+ORDER BY price_range;
+
+--5. Find cities with more than 100 restaurants.
+SELECT * FROM zomato_restaurants
+
+SELECT
+    city,
+    COUNT(*) AS restaurant_count
+FROM zomato_restaurants
+GROUP BY city
+HAVING COUNT(*) > 100
+ORDER BY restaurant_count DESC;
+
+--6. Find the percentage of restaurants offering online delivery.
+SELECT * FROM zomato_restaurants
+
+SELECT
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE LOWER(has_online_delivery) = 'yes'
+        ) / COUNT(*),
+        2
+    ) AS online_delivery_percentage
+FROM zomato_restaurants;
+
+--7. Find the most expensive restaurants.
+SELECT * FROM zomato_restaurants
+
+SELECT
+    restaurant_name,
+    city,
+    average_cost_for_two,
+    currency
+FROM zomato_restaurants
+ORDER BY average_cost_for_two DESC
+LIMIT 10;
+
+--8. Find the city with the highest average restaurant rating.
+SELECT * FROM zomato_restaurants
+
+SELECT
+    city,
+    ROUND(AVG(aggregate_rating), 2) AS average_rating
+FROM zomato_restaurants
+WHERE aggregate_rating > 0
+GROUP BY city
+ORDER BY average_rating DESC
+LIMIT 1;
+
+--9. Find the city with the highest average cost for two.
+SELECT * FROM zomato_restaurants
+
+SELECT
+    city,
+    ROUND(AVG(average_cost_for_two), 2) AS average_cost
+FROM zomato_restaurants
+GROUP BY city
+ORDER BY average_cost DESC
+LIMIT 1;
+
+--10. Find restaurants whose rating is above the city average.
+SELECT * FROM zomato_restaurants
+
+SELECT
+    restaurant_name,
+    city,
+    aggregate_rating
+FROM zomato_restaurants z
+WHERE aggregate_rating > (
+    SELECT AVG(z2.aggregate_rating)
+    FROM zomato_restaurants z2
+    WHERE z2.city = z.city
+      AND z2.aggregate_rating > 0
+)
+ORDER BY city, aggregate_rating DESC;
+
+
+--11. Find restaurants with above-average votes and ratings.
+SELECT * FROM zomato_restaurants
+
+SELECT
+    restaurant_name,
+    city,
+    aggregate_rating,
+    votes
+FROM zomato_restaurants
+WHERE aggregate_rating > (
+    SELECT AVG(aggregate_rating)
+    FROM zomato_restaurants
+    WHERE aggregate_rating > 0
+)
+AND votes > (
+    SELECT AVG(votes)
+    FROM zomato_restaurants
+)
+ORDER BY aggregate_rating DESC, votes DESC;
+
+--12. Find the percentage contribution of each price range to total restaurants.
+SELECT * FROM zomato_restaurants
+
+SELECT
+    price_range,
+    COUNT(*) AS restaurant_count,
+    ROUND(
+        100.0 * COUNT(*) / SUM(COUNT(*)) OVER (),
+        2
+    ) AS percentage_contribution
+FROM zomato_restaurants
+GROUP BY price_range
+ORDER BY price_range;
+
+--13. Find the top 10% restaurants based on votes.
+SELECT * FROM zomato_restaurants
+
+WITH ranked_restaurants AS (
+    SELECT
+        restaurant_name,
+        city,
+        votes,
+        aggregate_rating,
+        NTILE(10) OVER (
+            ORDER BY votes DESC
+        ) AS vote_bucket
+    FROM zomato_restaurants
+)
+SELECT
+    restaurant_name,
+    city,
+    votes,
+    aggregate_rating
+FROM ranked_restaurants
+WHERE vote_bucket = 1
+ORDER BY votes DESC;
+
+--14. Find the most popular cuisine in every city.
+SELECT * FROM zomato_restaurants
+
+WITH cuisine_count AS (
+    SELECT
+        city,
+        cuisines,
+        COUNT(*) AS restaurant_count,
+        RANK() OVER (
+            PARTITION BY city
+            ORDER BY COUNT(*) DESC
+        ) AS ranking
+    FROM zomato_restaurants
+    WHERE cuisines IS NOT NULL
+    GROUP BY city, cuisines
+)
+SELECT
+    city,
+    cuisines,
+    restaurant_count
+FROM cuisine_count
+WHERE ranking = 1
+ORDER BY city;
+
+--15. Find the highest-rated restaurant in each country.
+SELECT * FROM zomato_restaurants
+
+WITH ranked_restaurants AS (
+    SELECT
+        country,
+        restaurant_name,
+        city,
+        aggregate_rating,
+        votes,
+        RANK() OVER (
+            PARTITION BY country
+            ORDER BY aggregate_rating DESC, votes DESC
+        ) AS ranking
+    FROM zomato_restaurants
+    WHERE aggregate_rating > 0
+)
+SELECT
+    country,
+    restaurant_name,
+    city,
+    aggregate_rating,
+    votes
+FROM ranked_restaurants
+WHERE ranking = 1
+ORDER BY country;
+
+--16. Categorize restaurants into Low, Medium, and High rated using CASE.
+SELECT * FROM zomato_restaurants
+
+SELECT
+    restaurant_name,
+    city,
+    aggregate_rating,
+    CASE
+        WHEN aggregate_rating < 3.0 THEN 'Low'
+        WHEN aggregate_rating >= 3.0
+             AND aggregate_rating < 4.0 THEN 'Medium'
+        WHEN aggregate_rating >= 4.0 THEN 'High'
+        ELSE 'Not Rated'
+    END AS rating_category
+FROM zomato_restaurants
+ORDER BY aggregate_rating DESC;
+
