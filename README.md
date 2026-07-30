@@ -109,9 +109,9 @@ zomato_restaurants
 ##  --2. Find the top 10 restaurants based on votes.
 ##  --3. Find the most popular cuisine.
 ##  --4. Find the average rating for each price range.
-##--5. Find cities with more than 100 restaurants.
-##--6. Find the percentage of restaurants offering online delivery.
-##--7. Find the most expensive restaurants.
+##  --5. Find cities with more than 100 restaurants.
+##  --6. Find the percentage of restaurants offering online delivery.
+##  --7. Find the most expensive restaurants.
 ##  --8. Find the city with the highest average restaurant rating.
 ##  --9. Find the city with the highest average cost for two.
 ##  --10. Find restaurants whose rating is above the city average.
